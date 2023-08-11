@@ -6,9 +6,16 @@ import android.widget.ArrayAdapter
 import com.example.dailytodo.Note
 import com.example.dailytodo.R
 import com.example.dailytodo.databinding.RowItemBinding
+import com.google.firebase.database.DatabaseReference
+import com.google.firebase.database.FirebaseDatabase
 
-class Adapter(context: Context, resource: Int, notes: List<Note>) :
-    ArrayAdapter<Note>(context, resource, notes) {
+class Adapter(
+    context: Context,
+    resource: Int,
+    private val notes: List<Note>
+) : ArrayAdapter<Note>(context, resource, notes) {
+
+    private val database: DatabaseReference = FirebaseDatabase.getInstance().reference.child("notes")
 
     override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
         val note = getItem(position)
@@ -18,6 +25,14 @@ class Adapter(context: Context, resource: Int, notes: List<Note>) :
         binding.itemTitle.text = note?.noteTitle
         binding.itemDetails.text = note?.noteDetail
         binding.dateTextView.text = note?.dueDate
+
+        binding.itemDoneCheckBox.isChecked = note?.isDone ?: false
+        binding.itemDoneCheckBox.setOnCheckedChangeListener { _, isChecked ->
+            note?.let {
+                it.isDone = isChecked
+                updateNoteInFirebase(it)
+            }
+        }
 
         // Calculate the background color based on position
         val colorResId = when (position % 5) {
@@ -30,5 +45,10 @@ class Adapter(context: Context, resource: Int, notes: List<Note>) :
         binding.root.setBackgroundResource(colorResId)
 
         return binding.root
+    }
+
+    private fun updateNoteInFirebase(note: Note) {
+        val noteId = notes.indexOf(note).toString()
+        database.child(noteId).setValue(note)
     }
 }

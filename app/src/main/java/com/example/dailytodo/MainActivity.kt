@@ -17,21 +17,16 @@ import com.google.firebase.database.ValueEventListener
 class MainActivity : AppCompatActivity() {
     lateinit var binding: ActivityMainBinding
 
-
-
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val binding = ActivityMainBinding.inflate(layoutInflater)
+        binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
 
         var noteList = mutableListOf<Note>()
 
         val adapter = Adapter(this, R.layout.row_item, noteList)
         binding.itemsList.adapter = adapter
-        var database = FirebaseDatabase.getInstance().reference
-
+        var database = FirebaseDatabase.getInstance().reference.child("notes")
 
         val addButton = findViewById<FloatingActionButton>(R.id.add_fab)
         addButton.setOnClickListener {
@@ -39,27 +34,23 @@ class MainActivity : AppCompatActivity() {
             startActivity(intent)
         }
 
-
-        var getData = object : ValueEventListener {
+        val getData = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 noteList.clear()
                 for (i in snapshot.children) {
-                    val title = i.key ?: ""
+                    val title = i.child("noteTitle").getValue(String::class.java) ?: ""
                     val date = i.child("dueDate").getValue(String::class.java) ?: ""
                     val details = i.child("noteDetail").getValue(String::class.java) ?: ""
+                    val isDone = i.child("isDone").getValue(Boolean::class.java) ?: false
 
-                    noteList.add(Note(title, details, date))
+                    noteList.add(Note(title, date, details, isDone))
                 }
                 adapter.notifyDataSetChanged()
             }
 
             override fun onCancelled(error: DatabaseError) {
-                // Handle error
             }
         }
-
-
-
 
         database.addValueEventListener(getData)
     }
